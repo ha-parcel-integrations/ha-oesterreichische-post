@@ -26,6 +26,7 @@ def reset_one_shot_warnings():
         parcels._uncertain_statuses_logged,
         parcels._shape_fields_logged,
         parcels._units_logged,
+        parcels._eta_shape_logged,
     ):
         logged.clear()
     yield

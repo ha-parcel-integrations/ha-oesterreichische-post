@@ -307,6 +307,7 @@ def build_history(
 # values — ``shipper`` and the address fields are PII.
 _shape_fields_logged: set[str] = set()
 _units_logged: set[str] = set()
+_eta_shape_logged: set[str] = set()
 
 # Fields we map that a populated shipment is expected to carry. Presence is
 # tested by key, not truthiness, so a present-but-null field (a parcel that
@@ -353,6 +354,26 @@ def _warn_assumed_unit(field: str, assumed: str) -> None:
     )
 
 
+def _warn_unusable_eta_time(value: Any) -> None:
+    """Report once that Post's ETA time field did not combine into an instant.
+
+    Logging the value is deliberate and safe here: it is a clock time in a
+    delivery window, not an identifier, and its *format* is exactly what has to
+    be seen to fix the parser.
+    """
+    if _eta_shape_logged:
+        return
+    _eta_shape_logged.add("estimatedDelivery")
+    _LOGGER.warning(
+        "Österreichische Post reported an expected-delivery time we could not "
+        "combine with its date (%r), so the delivery window falls back to the "
+        "date alone. Please help us parse it by opening an issue and pasting "
+        "this line: %s",
+        value,
+        NEW_ISSUE_URL,
+    )
+
+
 def check_shipment_shape(raw: dict) -> None:
     """One-shot WARNINGs for the parts of the payload still unconfirmed.
 
@@ -386,6 +407,10 @@ def combine_date_time(date_part: Any, time_part: Any) -> str | None:
     time is optional and dropped when it does not combine into something
     parseable, so a reshaped time field degrades to a date rather than losing
     the ETA entirely.
+
+    Pre-1.0: that degradation is otherwise **silent** — the user would just see
+    a window pinned to midnight — so a time we cannot use self-reports once. The
+    exact shape of these two fields has never been seen on a real parcel.
     """
     if not date_part:
         return None
@@ -393,14 +418,13 @@ def combine_date_time(date_part: Any, time_part: Any) -> str | None:
     if time_part:
         # Post's own date field may already carry a time; joining then would
         # produce nonsense, so only join a bare date.
-        joined = (
-            date_text
-            if "T" in date_text or " " in date_text
-            else f"{date_text}T{time_part}"
-        )
+        already_timed = "T" in date_text or " " in date_text
+        joined = date_text if already_timed else f"{date_text}T{time_part}"
         combined = to_iso_timestamp(joined)
         if combined and parse_iso(combined) is not None:
             return combined
+        if not already_timed:
+            _warn_unusable_eta_time(time_part)
     date_only = to_iso_timestamp(date_text)
     return date_only if date_only and parse_iso(date_only) is not None else None
 

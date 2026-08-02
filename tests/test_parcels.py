@@ -209,6 +209,26 @@ def test_combine_date_time_ignores_an_unusable_time():
     )
 
 
+def test_unusable_eta_time_self_reports_once(caplog):
+    """Otherwise the window silently pins to midnight and nobody ever hears."""
+    combine_date_time("2026-04-29", "half past two")
+    combine_date_time("2026-04-30", "half past two")
+    assert caplog.text.count("expected-delivery time") == 1
+    assert "half past two" in caplog.text
+    assert "issues/new" in caplog.text
+
+
+def test_usable_eta_time_stays_silent(caplog):
+    combine_date_time("2026-04-29", "13:00")
+    assert caplog.text == ""
+
+
+def test_eta_time_is_not_blamed_when_the_date_already_carries_one(caplog):
+    """The time field was never used, so it cannot be what is malformed."""
+    assert combine_date_time("not a timestamp at all", "13:00") is None
+    assert caplog.text == ""
+
+
 def test_combine_date_time_does_not_double_up_a_full_timestamp():
     assert combine_date_time("2026-04-29T13:00:00", "15:00") == (
         "2026-04-29T13:00:00+02:00"
