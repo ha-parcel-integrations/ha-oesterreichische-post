@@ -32,7 +32,7 @@ you act in one of these areas:
 - **Per-parcel sensors are removed by the summary sensor** via
   `entity_registry.async_remove` (self-removal races and leaves ghosts).
 
-**API mechanics live in `carrier-research/api/oesterreichische-post/` (private
+**API mechanics live in `carrier-research/oesterreichische-post/api/` (private
 research repo)** — the keyless GraphQL endpoint, the query, the three-class
 error model, the 21-value `TrackingState` vocabulary and the payload mapping, plus
 the account-based surface behind Azure AD B2C. Do not duplicate them here.
@@ -131,7 +131,7 @@ python -m pytest tests/ --cov=custom_components.oesterreichische_post
 
 Coverage must stay **above 95%** (silver `test-coverage` rule). Run before
 committing. A code change updates the README + this file in the same commit;
-the API reference lives in the private `carrier-research/api/oesterreichische-post/`,
+the API reference lives in the private `carrier-research/oesterreichische-post/api/`,
 not in this repo.
 
 `tests/conftest.py` also clears `parcels.py`'s one-shot warning sets between
