@@ -121,126 +121,36 @@ def _init_input(
     }
 
 
-async def test_options_add_parcel(hass):
-    entry = _hub([])
-    entry.add_to_hass(hass)
-
+async def _open_options_step(hass, entry, step_id: str):
+    """Start the options flow and select one of its two top-level routes."""
     result = await hass.config_entries.options.async_init(entry.entry_id)
-    with _accepts_any_code():
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], _init_input(add="123456789012345678")
-        )
-    assert result["type"] == "create_entry"
-    assert result["data"][CONF_PARCELS] == [
-        {CONF_TRACKING_CODE: "123456789012345678"}
-    ]
-
-
-async def test_options_add_code_with_separators(hass):
-    """Pasted codes with spaces/dashes are sanitised like the consumer site."""
-    entry = _hub([])
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    with _accepts_any_code():
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], _init_input(add="rr 123456789-at")
-        )
-    assert result["type"] == "create_entry"
-    assert result["data"][CONF_PARCELS] == [{CONF_TRACKING_CODE: "RR123456789AT"}]
-
-
-async def test_options_add_invalid_tracking_code(hass):
-    """Rejected offline — too short to be any tracking number at all."""
-    entry = _hub([])
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], _init_input(add="123")
+    assert result["type"] == "menu"
+    assert result["menu_options"] == ["parcels", "settings"]
+    return await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": step_id}
     )
-    assert result["errors"]["base"] == "invalid_tracking_code"
 
 
-async def test_options_add_code_post_itself_rejects(hass):
-    """Plausible offline, but Post answers 400 — the API is the authority."""
-    entry = _hub([])
+async def test_options_parcel_list_can_be_cleared(hass):
+    """A submitted empty list removes the final manually tracked parcel."""
+    entry = MockConfigEntry(domain=DOMAIN, options={CONF_PARCELS: [{CONF_TRACKING_CODE: "EXAMPLE111111"}]})
     entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    with patch(
-        GET_PARCEL, new=AsyncMock(side_effect=OesterreichischePostInvalidCodeError("x"))
-    ):
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], _init_input(add="999999999999999999")
-        )
-    assert result["errors"]["base"] == "invalid_tracking_code"
-
-
-async def test_options_add_parcel_while_post_is_down(hass):
-    """Undecided means accept — an outage must not block adding a parcel."""
-    entry = _hub([])
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    with patch(GET_PARCEL, new=AsyncMock(side_effect=aiohttp.ClientError("boom"))):
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], _init_input(add="123456789012345678")
-        )
-    assert result["type"] == "create_entry"
-    assert result["data"][CONF_PARCELS] == [
-        {CONF_TRACKING_CODE: "123456789012345678"}
-    ]
-
-
-async def test_options_add_duplicate_rejected(hass):
-    entry = _hub([{CONF_TRACKING_CODE: "111111111111111111"}])
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await _open_options_step(hass, entry, "parcels")
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], _init_input(add="111111111111111111", remove=[])
-    )
-    assert result["errors"]["base"] == "already_tracked"
-
-
-async def test_options_remove_parcel(hass):
-    entry = _hub([
-        {CONF_TRACKING_CODE: "111111111111111111"},
-        {CONF_TRACKING_CODE: "222222222222222222"},
-    ])
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], _init_input(remove=["111111111111111111"])
+        result["flow_id"], {"tracking_codes": []}
     )
     assert result["type"] == "create_entry"
-    codes = {p[CONF_TRACKING_CODE] for p in result["data"][CONF_PARCELS]}
-    assert codes == {"222222222222222222"}
+    assert result["data"][CONF_PARCELS] == []
 
 
-async def test_options_remove_then_readd_same_code(hass):
-    """Remove-then-add order: re-adding a just-removed code works."""
-    entry = _hub([{CONF_TRACKING_CODE: "111111111111111111"}])
+async def test_options_settings_preserve_parcel_list(hass):
+    """Saving settings must never replace the manually tracked parcel list."""
+    parcels = [{CONF_TRACKING_CODE: "EXAMPLE111111"}]
+    entry = MockConfigEntry(domain=DOMAIN, options={CONF_PARCELS: parcels})
     entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    with _accepts_any_code():
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"],
-            _init_input(add="111111111111111111", remove=["111111111111111111"]),
-        )
-    assert result["type"] == "create_entry"
-    assert result["data"][CONF_PARCELS] == [{CONF_TRACKING_CODE: "111111111111111111"}]
-
-
-async def test_options_changes_interval_history_and_delivered(hass):
-    entry = _hub([])
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await _open_options_step(hass, entry, "settings")
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        _init_input(
-            interval="120",
-            history=True, filter_type="parcels", amount=5,
-        ),
+        result["flow_id"], {CONF_DELIVERED_FILTER_TYPE: "days", CONF_DELIVERED_FILTER_AMOUNT: 7, CONF_INCLUDE_HISTORY: False, CONF_REFRESH_INTERVAL: "30"}
     )
     assert result["type"] == "create_entry"
-    assert result["data"][CONF_REFRESH_INTERVAL] == 120
-    assert result["data"][CONF_INCLUDE_HISTORY] is True
-    assert result["data"][CONF_DELIVERED_FILTER_TYPE] == "parcels"
-    assert result["data"][CONF_DELIVERED_FILTER_AMOUNT] == 5
+    assert result["data"][CONF_PARCELS] == parcels
