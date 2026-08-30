@@ -1,4 +1,5 @@
 """Tests for Österreichische Post diagnostics."""
+from datetime import timedelta
 from unittest.mock import MagicMock
 
 from custom_components.oesterreichische_post.diagnostics import (
@@ -36,10 +37,16 @@ async def test_diagnostics_redacts_and_counts(hass):
         }
     ]
     entry.runtime_data.coordinator.delivered = []
+    entry.runtime_data.coordinator.current_tier_minutes = 45
+    entry.runtime_data.coordinator.update_interval = timedelta(minutes=45)
 
     result = await async_get_config_entry_diagnostics(hass, entry)
 
     assert result["counts"] == {"incoming_active": 1, "delivered": 0}
+    assert result["polling"] == {
+        "current_tier_minutes": 45,
+        "update_interval_seconds": 2700.0,
+    }
     # tracking codes and payload PII are redacted, at every nesting level
     assert result["entry_options"]["parcels"][0]["tracking_code"] == "**REDACTED**"
     assert result["incoming"][0]["barcode"] == "**REDACTED**"

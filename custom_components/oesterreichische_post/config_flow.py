@@ -28,14 +28,11 @@ from .const import (
     CONF_DELIVERED_FILTER_TYPE,
     CONF_INCLUDE_HISTORY,
     CONF_PARCELS,
-    CONF_REFRESH_INTERVAL,
     CONF_TRACKING_CODE,
     DEFAULT_DELIVERED_FILTER_AMOUNT,
     DEFAULT_DELIVERED_FILTER_TYPE,
     DEFAULT_INCLUDE_HISTORY,
-    DEFAULT_REFRESH_INTERVAL,
     DOMAIN,
-    REFRESH_INTERVAL_OPTIONS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -95,17 +92,6 @@ def _current_parcels(entry: ConfigEntry) -> list[dict[str, str]]:
     return [dict(item) for item in entry.options.get(CONF_PARCELS, [])]
 
 
-def _interval_selector() -> selector.SelectSelector:
-    """Return the refresh-interval dropdown selector (options translated via strings)."""
-    return selector.SelectSelector(
-        selector.SelectSelectorConfig(
-            options=[str(m) for m in REFRESH_INTERVAL_OPTIONS],
-            translation_key=CONF_REFRESH_INTERVAL,
-            mode=selector.SelectSelectorMode.DROPDOWN,
-        )
-    )
-
-
 class OesterreichischePostConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle the UI-driven configuration flow for the Österreichische Post integration."""
 
@@ -142,7 +128,6 @@ class OesterreichischePostConfigFlow(ConfigFlow, domain=DOMAIN):
                 CONF_PARCELS: [],
                 CONF_DELIVERED_FILTER_TYPE: DEFAULT_DELIVERED_FILTER_TYPE,
                 CONF_DELIVERED_FILTER_AMOUNT: DEFAULT_DELIVERED_FILTER_AMOUNT,
-                CONF_REFRESH_INTERVAL: DEFAULT_REFRESH_INTERVAL,
                 CONF_INCLUDE_HISTORY: DEFAULT_INCLUDE_HISTORY,
             },
         )
@@ -225,7 +210,6 @@ class OesterreichischePostOptionsFlowHandler(OptionsFlow):
                         user_input[CONF_DELIVERED_FILTER_AMOUNT]
                     ),
                     CONF_INCLUDE_HISTORY: bool(user_input[CONF_INCLUDE_HISTORY]),
-                    CONF_REFRESH_INTERVAL: int(user_input[CONF_REFRESH_INTERVAL]),
                 },
             )
 
@@ -263,12 +247,6 @@ class OesterreichischePostOptionsFlowHandler(OptionsFlow):
                             CONF_INCLUDE_HISTORY, DEFAULT_INCLUDE_HISTORY
                         ),
                     ): selector.BooleanSelector(),
-                    vol.Required(
-                        CONF_REFRESH_INTERVAL,
-                        default=str(
-                            current.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)
-                        ),
-                    ): _interval_selector(),
                 }
             ),
         )
