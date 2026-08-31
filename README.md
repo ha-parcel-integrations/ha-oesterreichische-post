@@ -63,7 +63,6 @@ Part of the [ha-parcel-integrations](https://github.com/ha-parcel-integrations) 
 
 ## Requirements
 
-- Home Assistant 2024.12 or newer
 - An Österreichische Post parcel and its tracking number (from the shipping
   confirmation email, the parcel label or the missed-delivery card) — no account
   needed. Both Post's own numbers and international UPU codes (`RR123456789AT`)
