@@ -41,12 +41,13 @@ def test_normalize_tracking_code_strips_and_uppercases():
     assert normalize_tracking_code(None) == ""
 
 
-def test_valid_tracking_code_bounds():
-    """Deliberately permissive — Post's own 400 is the real authority."""
+def test_valid_tracking_code_accepts_any_non_empty_value():
+    """Post's own 400 is the real authority, not a guessed client-side shape."""
     assert valid_tracking_code("123456789012345678")  # 18 digits
     assert valid_tracking_code("RR123456789AT")  # UPU S10
-    assert not valid_tracking_code("123")  # too short
-    assert not valid_tracking_code("1" * 31)  # too long
+    assert valid_tracking_code("123")
+    assert valid_tracking_code("1" * 31)
+    assert not valid_tracking_code("")
 
 
 async def test_verify_accepts_a_number_post_does_not_know_yet(hass):
@@ -153,22 +154,8 @@ async def test_options_settings_preserve_parcel_list(hass):
     assert result["data"][CONF_PARCELS] == parcels
 
 
-async def test_options_parcel_list_rejects_a_malformed_code(hass):
-    """A code that fails the bounds check never reaches the endpoint."""
-    entry = MockConfigEntry(domain=DOMAIN, options={CONF_PARCELS: []})
-    entry.add_to_hass(hass)
-    result = await _open_options_step(hass, entry, "parcels")
-    with patch(GET_PARCEL) as get_parcel:
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], {"tracking_codes": ["123"]}
-        )
-    assert result["type"] == "form"
-    assert result["errors"] == {"base": "invalid_tracking_code"}
-    get_parcel.assert_not_called()
-
-
 async def test_options_parcel_list_rejects_a_code_post_reports_invalid(hass):
-    """Post's own 400 stops the code being added, same as the bounds check."""
+    """Post's own 400 is what stops a malformed code being added."""
     entry = MockConfigEntry(domain=DOMAIN, options={CONF_PARCELS: []})
     entry.add_to_hass(hass)
     result = await _open_options_step(hass, entry, "parcels")

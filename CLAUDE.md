@@ -58,10 +58,12 @@ the account-based surface behind Azure AD B2C. Do not duplicate them here.
   thing the config flow and `track_parcel` reject — via
   `OesterreichischePostInvalidCodeError`, a subclass so the coordinator's
   existing except clause still catches it.
-- **Post's 400 is the format authority, so `_TRACKING_CODE_RE` stays
-  permissive** (`^[A-Z0-9]{8,30}$`). It only filters what cannot be a tracking
-  number at all; the endpoint decides the rest. Unreachable means *accept* —
-  an outage must not block adding a parcel.
+- **Post's 400 is the only format authority — there is no client-side shape
+  check at all.** `valid_tracking_code` just requires a non-empty string;
+  real tracking-number formats vary too much to guess a bound worth gating
+  on. `async_verify_tracking_code` still calls Post itself and rejects only
+  its dedicated `INVALID_ARGUMENT_IDENTITY_CODE` response. Unreachable means
+  *accept* — an outage must not block adding a parcel.
 - **Naive timestamps are anchored to `Europe/Vienna`, not UTC.** Post stamps in
   local time and Austria is one zone; reading them as UTC would shift every
   event and ETA by an hour or two. `_VIENNA` is resolved at import, never in the

@@ -37,17 +37,6 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-# Deliberately permissive, because **Post itself is the authority** on the
-# format: it answers HTTP 400 with a dedicated error code for a malformed
-# number, so :func:`async_verify_tracking_code` can reject nonsense without
-# anyone having to guess a regex. This only filters out what cannot possibly be
-# a tracking number, so an unusual-but-valid one is never rejected offline.
-#
-# Probed accepted shapes: 10-22 digits, and UPU S10 (``RR123456789AT``); ``123``
-# is rejected. The bound is widened a little on both ends against the probes.
-_TRACKING_CODE_RE = re.compile(r"^[A-Z0-9]{8,30}$")
-
-
 def normalize_tracking_code(value: str) -> str:
     """Return the tracking code upper-cased with separators stripped.
 
@@ -59,8 +48,13 @@ def normalize_tracking_code(value: str) -> str:
 
 
 def valid_tracking_code(value: str) -> bool:
-    """Whether ``value`` looks like an Österreichische Post tracking code."""
-    return bool(_TRACKING_CODE_RE.match(value))
+    """Accept every non-empty code.
+
+    Carriers' real tracking-number formats vary too much and differ from any
+    one guessed shape, and an invalid code just comes back "not found" from
+    the API anyway.
+    """
+    return bool(value)
 
 
 async def async_verify_tracking_code(hass: HomeAssistant, code: str) -> bool | None:

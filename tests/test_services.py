@@ -71,12 +71,12 @@ async def test_track_parcel_normalizes_code(hass):
     assert entry.options[CONF_PARCELS] == [{CONF_TRACKING_CODE: "RR123456789AT"}]
 
 
-async def test_track_parcel_rejects_invalid_code(hass):
-    """Too short to be any tracking number — rejected without asking Post."""
+async def test_track_parcel_rejects_blank_code(hass):
+    """Nothing left after normalizing — rejected without asking Post."""
     await _setup(hass)
     with pytest.raises(ServiceValidationError):
         await hass.services.async_call(
-            DOMAIN, "track_parcel", {CONF_TRACKING_CODE: "123"}, blocking=True
+            DOMAIN, "track_parcel", {CONF_TRACKING_CODE: "---"}, blocking=True
         )
 
 
