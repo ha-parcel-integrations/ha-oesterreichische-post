@@ -2,7 +2,7 @@
   "domain": "oesterreichische_post",
   "name": "\u00d6sterreichische Post",
   "codeowners": [
-    "@peternijssen"
+    "@peter-mdf"
   ],
   "config_flow": true,
   "documentation": "https://github.com/ha-parcel-integrations/ha-oesterreichische-post",
