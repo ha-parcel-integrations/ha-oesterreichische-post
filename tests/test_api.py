@@ -51,6 +51,20 @@ async def test_get_parcel_returns_shipment_on_success():
     assert "einzelsendung" in request["query"]
 
 
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    [("de", "de"), ("de-AT", "de"), ("en", "en"), ("nl", "en"), (None, "en")],
+)
+async def test_get_parcel_asks_for_german_or_english(language, expected):
+    """Post knows only German and English and defaults to German."""
+    session = _session_returning(200, graphql_response(active_shipment()))
+    client = OesterreichischePostApiClient(session, language)
+
+    await client.async_get_parcel(ACTIVE_CODE)
+
+    assert session.post.call_args.kwargs["headers"] == {"Accept-Language": expected}
+
+
 async def test_get_parcel_returns_none_when_not_found():
     """An unknown or not-yet-scanned number is a normal state, not an error."""
     client = OesterreichischePostApiClient(_session_returning(200, not_found_response()))

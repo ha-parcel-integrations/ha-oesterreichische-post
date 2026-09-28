@@ -54,9 +54,17 @@ class OesterreichischePostApiClient:
         {"errors": [{...}]}                   HTTP 400 malformed, or a fault
     """
 
-    def __init__(self, session: aiohttp.ClientSession) -> None:
-        """Initialise the client with an aiohttp session."""
+    def __init__(
+        self, session: aiohttp.ClientSession, language: str | None = None
+    ) -> None:
+        """Initialise the client with an aiohttp session and HA's language."""
         self._session = session
+        # Post localises place names, state labels and the ETA text on this
+        # header, knows only German and English, and answers German when it is
+        # missing — so an English-speaking HA has to ask for English explicitly.
+        self._headers = {
+            "Accept-Language": "de" if str(language or "").lower().startswith("de") else "en"
+        }
 
     async def async_get_parcel(self, tracking_code: str) -> dict[str, Any] | None:
         """Fetch one parcel's tracking details.
@@ -69,7 +77,9 @@ class OesterreichischePostApiClient:
         propagate as ``aiohttp.ClientError``.
         """
         request = {"query": TRACKING_QUERY, "variables": {"id": tracking_code}}
-        async with self._session.post(TRACKING_API_URL, json=request) as response:
+        async with self._session.post(
+            TRACKING_API_URL, json=request, headers=self._headers
+        ) as response:
             status = response.status
             try:
                 # content_type=None: the error responses in particular have been

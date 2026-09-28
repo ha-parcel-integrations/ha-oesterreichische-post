@@ -30,7 +30,9 @@ type OesterreichischePostConfigEntry = ConfigEntry[OesterreichischePostData]
 async def async_setup_entry(hass: HomeAssistant, entry: OesterreichischePostConfigEntry) -> bool:
     """Set up Österreichische Post from a config entry."""
     # No auth: Österreichische Post tracking is public, so the HA-managed session is fine.
-    client = OesterreichischePostApiClient(async_get_clientsession(hass))
+    client = OesterreichischePostApiClient(
+        async_get_clientsession(hass), hass.config.language
+    )
     coordinator = OesterreichischePostCoordinator(hass, client, entry)
 
     # Fetch initial data here, before forwarding to platforms. Raising
