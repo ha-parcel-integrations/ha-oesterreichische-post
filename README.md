@@ -11,12 +11,10 @@ A custom Home Assistant integration that tracks your [Österreichische Post](htt
 
 Part of the [ha-parcel-integrations](https://ha-parcel-integrations.github.io/) family: it publishes the same canonical parcel format, statuses and events as the other carrier integrations, so it plugs straight into the [Parcel Aggregator](https://github.com/ha-parcel-integrations/ha-parcel-aggregator) and cross-carrier automations.
 
-> ### ⚠️ Early release — no real Austrian parcel has been tracked yet
->
-> The endpoint is live and keyless, its error handling is verified against it,
-> and the status vocabulary is complete — it was lifted from Post's own app, so
-> nothing about the mapping is guessed. What has **not** been seen from a real
-> parcel is a *populated* response, so three things are still open:
+> ⚠️ **Pre-1.0 release.** No real Austrian parcel has been tracked with this
+> integration yet. The endpoint and its error handling work and the status
+> vocabulary is complete, but a *populated* response has not been seen, so
+> three things are still open:
 >
 > - whether the expected delivery window, sender, weight and dimensions are
 >   filled in at all on the public endpoint;
