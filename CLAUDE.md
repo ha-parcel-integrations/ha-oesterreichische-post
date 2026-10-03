@@ -87,8 +87,7 @@ the account-based surface behind Azure AD B2C. Do not duplicate them here.
   questions.
 - **Account-based auto-import exists but is parked.** Post has a Bearer-token
   surface that returns received *and* sent parcels in one call — the
-  DPD/PostNL shape — behind Azure AD B2C with a public native `client_id`
-  (permitted by the standing rulings). It is not built because a B2C login flow
+  DPD/PostNL shape — behind Azure AD B2C. It is not built because a B2C login flow
   cannot be written blind, and users on ID Austria / Apple / Google / MFA could
   not be supported anyway. Nothing in the code path above blocks adding it.
 
