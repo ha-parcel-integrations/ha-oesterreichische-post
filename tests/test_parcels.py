@@ -249,8 +249,46 @@ def test_combine_date_time_handles_missing_and_garbage():
 
 
 def test_current_state_key_takes_the_newest_event():
-    """Post returns events newest-first, and has no machine status of its own."""
+    """Post has no machine status of its own, so the newest event decides."""
     assert current_state_key(delivered_shipment()) == "delivered"
+
+
+def test_current_state_key_reads_an_oldest_first_list_correctly():
+    """Real parcels arrive oldest-first, so position must not decide this."""
+    shipment = {
+        "activeIdentityCode": ACTIVE_CODE,
+        "sendungsEvents": [
+            {
+                "trackingStateKey": "aviso",
+                "timestamp": "2026-08-06T15:25:12.000+00:00",
+            },
+            {
+                "trackingStateKey": "inDelivery",
+                "timestamp": "2026-08-11T04:35:17.000+00:00",
+            },
+            {
+                "trackingStateKey": "delivered",
+                "timestamp": "2026-08-11T08:10:20.747+00:00",
+            },
+        ],
+    }
+    assert current_state_key(shipment) == "delivered"
+    assert normalize_parcel(shipment)["status"] is ParcelStatus.DELIVERED
+    assert normalize_parcel(shipment)["delivered_at"] == (
+        "2026-08-11T08:10:20.747000+00:00"
+    )
+
+
+def test_current_state_key_falls_back_to_wire_order_without_timestamps():
+    """An event whose stamp will not parse must not be able to win."""
+    shipment = {
+        "activeIdentityCode": ACTIVE_CODE,
+        "sendungsEvents": [
+            {"trackingStateKey": "aviso", "timestamp": "nonsense"},
+            {"trackingStateKey": "inDelivery", "timestamp": None},
+        ],
+    }
+    assert current_state_key(shipment) == "inDelivery"
 
 
 def test_current_state_key_synthesises_pending_information():

@@ -262,9 +262,9 @@ def build_history(
     its event code when the API has no human-readable text. Sorted oldest →
     newest and capped to the most recent ``max_events``.
 
-    Post returns ``sendungsEvents`` **newest-first** (its app reads
-    ``events.first()`` as the current state), so the sort below is not a
-    formality — it is what puts the timeline the right way round.
+    ``sendungsEvents`` arrives **oldest-first** on every real parcel captured,
+    so the sort below agrees with the wire order rather than reversing it — but
+    it stays, because nothing in the payload promises an order.
 
     ``textEn`` is preferred over the German ``text`` for ``raw_status``: it is
     the same event in the user's more likely second language, and Post populates
@@ -429,37 +429,58 @@ def combine_date_time(date_part: Any, time_part: Any) -> str | None:
     return date_only if date_only and parse_iso(date_only) is not None else None
 
 
+def _newest_event(events: list | None, *, matching=None) -> dict | None:
+    """Return the newest event by timestamp, optionally filtered by ``matching``.
+
+    Position is deliberately not trusted: real parcels arrive **oldest-first**,
+    the opposite of what this integration originally assumed, and an event
+    whose timestamp will not parse must not be able to win. Ties and
+    unparseable stamps fall back to the last qualifying event in wire order,
+    which is the newest one on every parcel seen so far.
+    """
+    best: tuple[datetime, dict] | None = None
+    fallback: dict | None = None
+    for event in events or []:
+        if not isinstance(event, dict) or not event.get("trackingStateKey"):
+            continue
+        if matching is not None and not matching(event):
+            continue
+        fallback = event
+        stamp = to_iso_timestamp(event.get("timestamp"))
+        parsed = parse_iso(stamp) if stamp else None
+        if parsed is not None and (best is None or parsed >= best[0]):
+            best = (parsed, event)
+    return best[1] if best is not None else fallback
+
+
 def current_state_key(raw: dict) -> str | None:
     """Return the state key describing where the parcel is *now*.
 
     Post has no machine-readable status on the shipment itself — its ``status``
     field is display text — so the current state is the newest event's
-    ``trackingStateKey``, which is the first one in the list.
+    ``trackingStateKey``, picked by timestamp rather than by position.
 
     A shipment with no events at all falls back to ``PENDING_INFORMATION``, the
     same value the app synthesises: the number is known (or was just entered by
     the user) but nothing has scanned it yet. ``PARCEL_STAMP`` needs no
     synthesising — a label-only shipment carries it as a real event.
     """
-    for event in raw.get("sendungsEvents") or []:
-        if isinstance(event, dict) and event.get("trackingStateKey"):
-            return str(event["trackingStateKey"])
+    newest = _newest_event(raw.get("sendungsEvents"))
+    if newest is not None:
+        return str(newest["trackingStateKey"])
     if raw.get("activeIdentityCode") or raw.get("originalIdentityCode"):
         return "PENDING_INFORMATION"
     return None
 
 
 def delivered_timestamp(events: list | None) -> str | None:
-    """Return the newest event that means "delivered", as an ISO timestamp.
-
-    The list arrives newest-first, so the first match is the right one.
-    """
-    for event in events or []:
-        if not isinstance(event, dict):
-            continue
-        if map_event_status(event.get("trackingStateKey")) is ParcelStatus.DELIVERED:
-            return to_iso_timestamp(event.get("timestamp"))
-    return None
+    """Return the newest event that means "delivered", as an ISO timestamp."""
+    newest = _newest_event(
+        events,
+        matching=lambda event: map_event_status(event.get("trackingStateKey"))
+        is ParcelStatus.DELIVERED,
+    )
+    return to_iso_timestamp(newest.get("timestamp")) if newest else None
 
 
 def normalize_parcel(raw: dict, *, include_history: bool = False) -> dict:

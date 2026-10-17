@@ -49,8 +49,23 @@ the account-based surface behind Azure AD B2C. Do not duplicate them here.
   stops answering surfaces as an API error, not a credential prompt.
 - **The status comes from the newest event, not from the shipment.** Post's
   shipment-level `status` is display text, so it becomes `raw_status` while the
-  canonical status is mapped from `sendungsEvents[0].trackingStateKey`. The
-  events arrive **newest-first**, which is also why `build_history` reverses.
+  canonical status is mapped from the newest `trackingStateKey`.
+  **`sendungsEvents` arrives oldest-first** — the opposite of what this
+  integration assumed until two real parcels were captured on 2026-10-17, which
+  made every parcel report the status of its *first* scan (a delivered parcel
+  read as `registered`). `_newest_event` now picks by timestamp rather than by
+  position, for both the status and `delivered_at`, and falls back to the last
+  qualifying event in wire order when a stamp will not parse.
+- **Weight and dimensions are real, the units are still assumed.** Both
+  parcels carried them (0.45 kg / 35×31×7 and 0.1 kg / 13×13×5 on the
+  assumed units), so the fields exist — but nothing in the payload names a
+  unit, and the `text` string is built by this integration, not by Post. The
+  unit warnings stay until someone weighs a parcel.
+- **There is no delivery time window.** `estimatedDelivery` was `null` on both
+  parcels and `estimatedDeliveryDate` is display text with no year
+  (`"Tuesday, 11/08"`, or `"No estimated delivery date available"`), which is
+  why `planned_from`/`planned_to` stay `None` rather than being parsed out of
+  prose.
 - **A number Post does not know is not an error.** It reads as
   `registered` (Post's own synthesised `PENDING_INFORMATION`), because a printed
   label nobody has scanned is the normal state of a new parcel. Only the
@@ -76,8 +91,8 @@ the account-based surface behind Azure AD B2C. Do not duplicate them here.
 - **`DELIVERY_PARKED` counts as delivered** and `DELIVERY_INTERUPTED` keeps
   Post's own typo — both come from the app's own logic, not from inference.
 - **Pre-1.0 self-reporting** (`check_shipment_shape` + `_UNCERTAIN_STATUSES`):
-  no real Austrian parcel has ever come back through this integration, so a
-  populated shipment missing a mapped field (`status`/`estimatedDelivery`/
+  two real Austrian parcels have been captured but neither settled the units or
+  the remaining vocabulary, so a populated shipment missing a mapped field (`status`/`estimatedDelivery`/
   `shipper`/`weight`/`dimensions`), the first sighting of a `weight` or
   `dimensions` value (units **assumed** kg/cm), and the first sighting of
   `ALLES_POST` or `NOTIFIED` each log a one-shot WARNING with the issue link —
