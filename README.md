@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/ha-parcel-integrations/ha-oesterreichische-post.svg)](https://github.com/ha-parcel-integrations/ha-oesterreichische-post/releases)
 [![Downloads](https://img.shields.io/github/downloads/ha-parcel-integrations/ha-oesterreichische-post/total.svg)](https://github.com/ha-parcel-integrations/ha-oesterreichische-post/releases)
-[![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![HACS](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > 💬 Questions or feedback? Join the discussion on the [Home Assistant community](https://community.home-assistant.io/t/packages-postnl-dhl-nl-dpd-and-gls-parcel-integration/112433/).
@@ -11,13 +11,9 @@ A custom Home Assistant integration that tracks your [Österreichische Post](htt
 
 Part of the [ha-parcel-integrations](https://ha-parcel-integrations.github.io/) family: it publishes the same canonical parcel format, statuses and events as the other carrier integrations, so it plugs straight into the [Parcel Aggregator](https://github.com/ha-parcel-integrations/ha-parcel-aggregator) and cross-carrier automations.
 
-> ⚠️ **Pre-1.0 release.** No real Austrian parcel has been tracked with this
-> integration yet. The endpoint and its error handling work and the status
-> vocabulary is complete, but a *populated* response has not been seen, so
-> three things are still open:
+> ⚠️ **Pre-1.0 release.** Real Austrian parcels have now been tracked, but two
+> things are still open:
 >
-> - whether the expected delivery window, sender, weight and dimensions are
->   filled in at all on the public endpoint;
 > - whether weight is in **kilograms** and dimensions in **centimetres** (both
 >   assumed);
 > - whether `ALLES_POST` and `NOTIFIED` land in the right canonical status.
@@ -71,9 +67,8 @@ Part of the [ha-parcel-integrations](https://ha-parcel-integrations.github.io/) 
 
 ### HACS (recommended)
 
-1. In HACS, choose the three-dot menu → **Custom repositories**.
-2. Add `https://github.com/ha-parcel-integrations/ha-oesterreichische-post` as an **Integration**.
-3. Install **Österreichische Post** and restart Home Assistant.
+1. Open HACS and search for **Österreichische Post**.
+2. Install it and restart Home Assistant.
 
 ### Manual
 
