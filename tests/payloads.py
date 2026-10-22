@@ -12,6 +12,7 @@ are all confirmed against the schema and the carrier's own app.
 Kept in one module rather than inline per test: when the populated shape turns
 out to differ from what we assumed, there is then exactly one place to fix.
 """
+
 from __future__ import annotations
 
 # 10-22 digits and UPU S10 are both accepted by the endpoint; the suite uses one

@@ -1,4 +1,5 @@
 """Tests for Österreichische Post device triggers."""
+
 from homeassistant.components import automation
 from homeassistant.helpers import device_registry as dr
 from homeassistant.setup import async_setup_component

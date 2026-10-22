@@ -12,11 +12,12 @@ pre-1.0 self-reporting warnings. Everything else — the sort contract, the
 delivered filter, the one-shot warning for unmapped statuses — is suite-wide
 machinery and should be left alone.
 """
+
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 import logging
 import re
-from datetime import datetime, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -196,11 +197,11 @@ def parse_iso(value: str | None) -> datetime | None:
     if not value:
         return None
     try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(str(value))
     except ValueError:
         return None
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
+        parsed = parsed.replace(tzinfo=UTC)
     return parsed
 
 
@@ -218,12 +219,12 @@ def to_iso_timestamp(value: Any) -> str | None:
         return None
     if isinstance(value, (int, float)):
         try:
-            return datetime.fromtimestamp(value / 1000, tz=timezone.utc).isoformat()
+            return datetime.fromtimestamp(value / 1000, tz=UTC).isoformat()
         except (OverflowError, OSError, ValueError):
             return None
     text = str(value)
     try:
-        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(text)
     except ValueError:
         return text
     if parsed.tzinfo is None:
@@ -477,8 +478,9 @@ def delivered_timestamp(events: list | None) -> str | None:
     """Return the newest event that means "delivered", as an ISO timestamp."""
     newest = _newest_event(
         events,
-        matching=lambda event: map_event_status(event.get("trackingStateKey"))
-        is ParcelStatus.DELIVERED,
+        matching=lambda event: (
+            map_event_status(event.get("trackingStateKey")) is ParcelStatus.DELIVERED
+        ),
     )
     return to_iso_timestamp(newest.get("timestamp")) if newest else None
 
@@ -579,14 +581,12 @@ def apply_delivered_filter(parcels: list[dict], entry: ConfigEntry) -> list[dict
     shows.
     """
     options = entry.options
-    filter_type = options.get(
-        CONF_DELIVERED_FILTER_TYPE, DEFAULT_DELIVERED_FILTER_TYPE
-    )
+    filter_type = options.get(CONF_DELIVERED_FILTER_TYPE, DEFAULT_DELIVERED_FILTER_TYPE)
     amount = int(
         options.get(CONF_DELIVERED_FILTER_AMOUNT, DEFAULT_DELIVERED_FILTER_AMOUNT)
     )
     if filter_type == "days":
-        cutoff = datetime.now(timezone.utc) - timedelta(days=amount)
+        cutoff = datetime.now(UTC) - timedelta(days=amount)
         return [
             parcel
             for parcel in parcels

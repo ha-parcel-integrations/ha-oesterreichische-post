@@ -13,6 +13,7 @@ relies on:
 * lets ``aiohttp.ClientError`` propagate untouched — ``DataUpdateCoordinator``
   already wraps those into ``UpdateFailed``.
 """
+
 from __future__ import annotations
 
 import logging
@@ -63,7 +64,9 @@ class OesterreichischePostApiClient:
         # header, knows only German and English, and answers German when it is
         # missing — so an English-speaking HA has to ask for English explicitly.
         self._headers = {
-            "Accept-Language": "de" if str(language or "").lower().startswith("de") else "en"
+            "Accept-Language": "de"
+            if str(language or "").lower().startswith("de")
+            else "en"
         }
 
     async def async_get_parcel(self, tracking_code: str) -> dict[str, Any] | None:
@@ -86,9 +89,7 @@ class OesterreichischePostApiClient:
                 # seen served as text/plain, which aiohttp would refuse to parse.
                 payload = await response.json(content_type=None)
             except ValueError as err:
-                raise OesterreichischePostApiError(
-                    f"unparseable body ({err})"
-                ) from err
+                raise OesterreichischePostApiError(f"unparseable body ({err})") from err
 
         if not isinstance(payload, dict):
             raise OesterreichischePostApiError("unexpected body (not a JSON object)")

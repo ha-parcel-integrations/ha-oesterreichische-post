@@ -4,12 +4,13 @@
 tracked parcel without opening the integration options — so a Lovelace button
 can start tracking a parcel straight from a dashboard.
 """
+
 from __future__ import annotations
 
-import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
+import voluptuous as vol
 
 from .config_flow import (
     async_verify_tracking_code,
@@ -52,8 +53,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
 
         if (await async_verify_tracking_code(hass, tracking_code)) is False:
             raise ServiceValidationError(
-                f"Österreichische Post rejects '{tracking_code}' as a tracking "
-                "number"
+                f"Österreichische Post rejects '{tracking_code}' as a tracking number"
             )
 
         parcels.append({CONF_TRACKING_CODE: tracking_code})

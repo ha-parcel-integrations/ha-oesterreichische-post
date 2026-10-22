@@ -7,7 +7,6 @@ import re
 from typing import Any
 
 import aiohttp
-import voluptuous as vol
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -17,6 +16,7 @@ from homeassistant.config_entries import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import voluptuous as vol
 
 from .api import (
     OesterreichischePostApiClient,
@@ -36,6 +36,7 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
 
 def normalize_tracking_code(value: str) -> str:
     """Return the tracking code upper-cased with separators stripped.

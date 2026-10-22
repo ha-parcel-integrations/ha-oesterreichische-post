@@ -1,8 +1,9 @@
 """Sensor platform for the Österreichische Post parcel tracker integration."""
+
 from __future__ import annotations
 
-import logging
 from datetime import datetime
+import logging
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -30,7 +31,6 @@ _LOGGER = logging.getLogger(__name__)
 PARALLEL_UPDATES = 0
 
 
-
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: OesterreichischePostConfigEntry,
@@ -42,9 +42,7 @@ async def async_setup_entry(
     # than (too late) from this forwarded platform.
     coordinator = entry.runtime_data.coordinator
 
-    current_barcodes: set[str] = {
-        p.get("barcode", "") for p in coordinator.data or []
-    }
+    current_barcodes: set[str] = {p.get("barcode", "") for p in coordinator.data or []}
     entry_id = entry.entry_id
 
     # Remove per-parcel sensors from the registry whose barcode is no longer
@@ -65,7 +63,7 @@ async def async_setup_entry(
             and entity_entry.unique_id.startswith(f"{entry_id}_")
             and entity_entry.unique_id not in non_parcel_unique_ids
         ):
-            barcode = entity_entry.unique_id[len(f"{entry_id}_"):]
+            barcode = entity_entry.unique_id[len(f"{entry_id}_") :]
             if barcode not in current_barcodes:
                 registry.async_remove(entity_entry.entity_id)
 
@@ -75,10 +73,10 @@ async def async_setup_entry(
         ),
         OesterreichischePostAwaitingPickupSensor(coordinator, entry),
     ]
-    for parcel in coordinator.data or []:
-        entities.append(
-            OesterreichischePostParcelSensor(coordinator, entry, parcel.get("barcode", ""))
-        )
+    entities.extend(
+        OesterreichischePostParcelSensor(coordinator, entry, parcel.get("barcode", ""))
+        for parcel in coordinator.data or []
+    )
     entities.append(OesterreichischePostNextDeliverySensor(coordinator, entry))
     entities.append(OesterreichischePostDeliveredParcelsSensor(coordinator, entry))
     entities.append(OesterreichischePostLastUpdateSensor(coordinator, entry))
@@ -97,7 +95,9 @@ class OesterreichischePostAwaitingPickupSensor(
     _attr_attribution = ATTRIBUTION
     _unrecorded_attributes = frozenset({"parcels"})
 
-    def __init__(self, coordinator: OesterreichischePostCoordinator, entry: ConfigEntry) -> None:
+    def __init__(
+        self, coordinator: OesterreichischePostCoordinator, entry: ConfigEntry
+    ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_awaiting_pickup"
@@ -188,7 +188,9 @@ class OesterreichischePostIncomingParcelsSensor(
         super()._handle_coordinator_update()
 
 
-class OesterreichischePostParcelSensor(CoordinatorEntity[OesterreichischePostCoordinator], SensorEntity):
+class OesterreichischePostParcelSensor(
+    CoordinatorEntity[OesterreichischePostCoordinator], SensorEntity
+):
     """Per-parcel sensor reporting the status of one tracked Österreichische Post parcel."""
 
     _attr_has_entity_name = True
@@ -197,7 +199,10 @@ class OesterreichischePostParcelSensor(CoordinatorEntity[OesterreichischePostCoo
     _unrecorded_attributes = frozenset({"raw", "history"})
 
     def __init__(
-        self, coordinator: OesterreichischePostCoordinator, entry: ConfigEntry, barcode: str
+        self,
+        coordinator: OesterreichischePostCoordinator,
+        entry: ConfigEntry,
+        barcode: str,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)

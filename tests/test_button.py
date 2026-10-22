@@ -1,4 +1,5 @@
 """Tests for the Österreichische Post refresh button."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 from custom_components.oesterreichische_post.button import (

@@ -1,4 +1,5 @@
 """Tests for the Österreichische Post API client."""
+
 import json
 from unittest.mock import AsyncMock, MagicMock
 
@@ -67,7 +68,9 @@ async def test_get_parcel_asks_for_german_or_english(language, expected):
 
 async def test_get_parcel_returns_none_when_not_found():
     """An unknown or not-yet-scanned number is a normal state, not an error."""
-    client = OesterreichischePostApiClient(_session_returning(200, not_found_response()))
+    client = OesterreichischePostApiClient(
+        _session_returning(200, not_found_response())
+    )
     assert await client.async_get_parcel(ACTIVE_CODE) is None
 
 
