@@ -130,7 +130,9 @@ Standard HA removal applies: **Settings → Devices & Services → Österreichis
 | `sensor.osterreichische_post_incoming_parcels` | Number of active tracked parcels, full list under the `parcels` attribute |
 | `sensor.osterreichische_post_parcel_<code>` | One per tracked parcel; state is the canonical status, attributes carry the full normalised parcel |
 | `sensor.osterreichische_post_next_delivery` | Earliest expected delivery moment across all active parcels |
+| `sensor.osterreichische_post_awaiting_pickup` | Incoming parcels that are ready to collect at a pickup point |
 | `sensor.osterreichische_post_delivered_parcels` | Recently delivered parcels (see the retention option) |
+| `calendar.osterreichische_post_deliveries` | Read-only calendar of expected deliveries, no extra API calls |
 | `sensor.osterreichische_post_last_successful_update` | Diagnostic: when Österreichische Post was last polled successfully |
 
 A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically.
