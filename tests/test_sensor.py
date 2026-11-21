@@ -7,6 +7,7 @@ from custom_components.oesterreichische_post.const import ParcelStatus
 from custom_components.oesterreichische_post.sensor import (
     OesterreichischePostAwaitingPickupSensor,
     OesterreichischePostDeliveredParcelsSensor,
+    OesterreichischePostEnRouteToPickupPointSensor,
     OesterreichischePostIncomingParcelsSensor,
     OesterreichischePostLastUpdateSensor,
     OesterreichischePostNextDeliverySensor,
@@ -88,12 +89,12 @@ def test_parcel_sensor_missing_barcode():
 def test_next_delivery_picks_earliest():
     coordinator = _coordinator(
         [
-            _parcel("A", planned_from="2026-05-02T10:00:00Z"),
-            _parcel("B", planned_from="2026-05-01T10:00:00Z"),
+            _parcel("A", planned_from="2099-05-02T10:00:00Z"),
+            _parcel("B", planned_from="2099-05-01T10:00:00Z"),
         ]
     )
     sensor = OesterreichischePostNextDeliverySensor(coordinator, _entry())
-    assert sensor.native_value == datetime(2026, 5, 1, 10, 0, tzinfo=UTC)
+    assert sensor.native_value == datetime(2099, 5, 1, 10, 0, tzinfo=UTC)
     assert sensor.extra_state_attributes["barcode"] == "B"
 
 
@@ -109,7 +110,7 @@ def test_next_delivery_skips_unparseable_moment():
     coordinator = _coordinator(
         [
             _parcel("A", planned_from="not-a-date"),
-            _parcel("B", planned_from="2026-05-01T10:00:00Z"),
+            _parcel("B", planned_from="2099-05-01T10:00:00Z"),
         ]
     )
     sensor = OesterreichischePostNextDeliverySensor(coordinator, _entry())
@@ -131,3 +132,22 @@ def test_last_update_sensor():
     coordinator.last_success_time = moment
     sensor = OesterreichischePostLastUpdateSensor(coordinator, _entry())
     assert sensor.native_value == moment
+
+
+def test_next_delivery_skips_a_window_that_has_ended():
+    coordinator = _coordinator([_parcel("OLD", planned_from="2000-01-01T10:00:00Z")])
+    sensor = OesterreichischePostNextDeliverySensor(coordinator, _entry())
+    assert sensor.native_value is None
+
+
+def test_en_route_counts_pickup_parcels_not_yet_there_and_not_returning():
+    en_route = _parcel("EN", ParcelStatus.IN_TRANSIT, pickup=True)
+    arrived = _parcel("AT", ParcelStatus.AT_PICKUP_POINT, pickup=True)
+    returning = _parcel("RET", ParcelStatus.RETURNING, pickup=True)
+    home = _parcel("HOME", ParcelStatus.IN_TRANSIT, pickup=False)
+    coordinator = _coordinator([en_route, arrived, returning, home])
+    sensor = OesterreichischePostEnRouteToPickupPointSensor(coordinator, _entry())
+    assert sensor.native_value == 1
+    assert sensor.extra_state_attributes["parcels"] == [en_route]
+    awaiting = OesterreichischePostAwaitingPickupSensor(coordinator, _entry())
+    assert awaiting._parcels() == [arrived]

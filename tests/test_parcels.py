@@ -206,14 +206,12 @@ def test_combine_date_time_joins_a_bare_date_and_time():
 
 
 def test_combine_date_time_accepts_a_date_alone():
-    assert combine_date_time("2026-04-29", None) == "2026-04-29T00:00:00+02:00"
+    assert combine_date_time("2026-04-29", None) == "2026-04-29"
 
 
 def test_combine_date_time_ignores_an_unusable_time():
     """A reshaped time field degrades to the date, never loses the ETA."""
-    assert combine_date_time("2026-04-29", "half past two") == (
-        "2026-04-29T00:00:00+02:00"
-    )
+    assert combine_date_time("2026-04-29", "half past two") == "2026-04-29"
 
 
 def test_unusable_eta_time_self_reports_once(caplog):
@@ -439,23 +437,23 @@ def test_normalize_active_parcel_has_window():
 
 
 def test_normalize_falls_back_to_the_single_date_estimate():
-    """No window: a point estimate never fills planned_to."""
+    """No window: a date covers the whole local day."""
     shipment = active_shipment()
     shipment["estimatedDelivery"] = None
     shipment["estimatedDeliveryDate"] = "2026-04-29"
     parcel = normalize_parcel(shipment)
     assert parcel["planned_from"] == "2026-04-29T00:00:00+02:00"
-    assert parcel["planned_to"] is None
+    assert parcel["planned_to"] == "2026-04-29T23:59:59+02:00"
 
 
-def test_normalize_collapses_point_estimate_to_no_window_end():
+def test_normalize_stretches_point_estimate_to_the_end_of_the_day():
     shipment = active_shipment()
     shipment["estimatedDelivery"]["endTime"] = shipment["estimatedDelivery"][
         "startTime"
     ]
     parcel = normalize_parcel(shipment)
     assert parcel["planned_from"] == "2026-04-29T13:00:00+02:00"
-    assert parcel["planned_to"] is None
+    assert parcel["planned_to"] == "2026-04-29T23:59:59+02:00"
 
 
 def test_normalize_pickup_parcel():

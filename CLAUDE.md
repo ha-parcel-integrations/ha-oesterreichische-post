@@ -61,11 +61,13 @@ the account-based surface behind Azure AD B2C. Do not duplicate them here.
   assumed units), so the fields exist — but nothing in the payload names a
   unit, and the `text` string is built by this integration, not by Post. The
   unit warnings stay until someone weighs a parcel.
-- **There is no delivery time window.** `estimatedDelivery` was `null` on both
-  parcels and `estimatedDeliveryDate` is display text with no year
-  (`"Tuesday, 11/08"`, or `"No estimated delivery date available"`), which is
-  why `planned_from`/`planned_to` stay `None` rather than being parsed out of
-  prose.
+- **No delivery time window has been seen yet.** `estimatedDelivery` was `null`
+  on both parcels and `estimatedDeliveryDate` is display text with no year
+  (`"Tuesday, 11/08"`, or `"No estimated delivery date available"`), so
+  `planned_from`/`planned_to` stay `None` rather than being parsed out of prose.
+  When a window does arrive it follows the parcel contract: a date is
+  `00:00:00`-`23:59:59` Vienna, a moment ends at `23:59:59` the same day, and
+  the window is emptied at `at_pickup_point`, `returning` and `delivered`.
 - **A number Post does not know is not an error.** It reads as
   `registered` (Post's own synthesised `PENDING_INFORMATION`), because a printed
   label nobody has scanned is the normal state of a new parcel. Only the
@@ -85,9 +87,18 @@ the account-based surface behind Azure AD B2C. Do not duplicate them here.
   event loop.
 - **`receiver` is always `None`** — the public surface has no recipient name.
   `deliveryAddressText` is free text, not a name, and stays in `raw`.
-- **`pickup_point` passes Post's raw `branchkey` through.** Resolving it to a
-  branch name needs a second keyless call to `bff/public/branches`; deliberately
-  not made in phase 1.
+- **`pickup_point` passes Post's raw `branchkey` through, only while `pickup`
+  is set.** Resolving it to a branch name needs a second keyless call to
+  `bff/public/branches`; deliberately not made in phase 1. Whether `branchkey`
+  is the pickup point's code on every parcel is unconfirmed, which is why a
+  home-delivery parcel never publishes it.
+- **Pickup points exist, so both pickup sensors exist.** `pickup` has no
+  structured source yet (`deliveryType` is queried but its values are unseen):
+  it is `True` once the current state or any event maps to `at_pickup_point`,
+  and stays `True` after collection. Until a real parcel shows a pickup route
+  or `NOTIFIED`, `en_route_to_pickup_point` and `awaiting_pickup` read 0;
+  `pickup_point`, `NOTIFIED` and the delivery window are all awaiting a real
+  parcel.
 - **`DELIVERY_PARKED` counts as delivered** and `DELIVERY_INTERUPTED` keeps
   Post's own typo — both come from the app's own logic, not from inference.
 - **Pre-1.0 self-reporting** (`check_shipment_shape` + `_UNCERTAIN_STATUSES`):
