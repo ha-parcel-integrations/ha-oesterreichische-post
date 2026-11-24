@@ -19,6 +19,7 @@ TO_REDACT = {
     "barcode",
     "sender",
     "receiver",
+    "contents",
     "url",
     "pickup_point",
     # Post payload fields. The two identity codes are the tracking number

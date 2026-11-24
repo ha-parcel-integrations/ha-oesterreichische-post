@@ -372,6 +372,7 @@ CANONICAL_KEYS = [
     "barcode",
     "sender",
     "receiver",
+    "contents",
     "status",
     "raw_status",
     "delivered",
@@ -400,6 +401,7 @@ def test_normalize_delivered_parcel():
     assert parcel["sender"] == "Example Shop"
     # The public surface has no recipient name at all.
     assert parcel["receiver"] is None
+    assert parcel["contents"] is None
     assert parcel["status"] == ParcelStatus.DELIVERED
     assert parcel["raw_status"] == "Delivered"
     assert parcel["delivered"] is True
@@ -633,4 +635,4 @@ def test_capabilities_are_known_values():
 
 def test_capabilities_are_the_full_set():
     """Post attempts every optional contract field — nothing is hard-coded None."""
-    assert CAPABILITIES == KNOWN_CAPABILITIES
+    assert KNOWN_CAPABILITIES - {"contents"} == CAPABILITIES

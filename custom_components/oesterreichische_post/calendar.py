@@ -87,9 +87,10 @@ class OesterreichischePostDeliveriesCalendar(
                 event_start, event_end = days
 
             barcode = parcel.get("barcode") or ""
-            sender = parcel.get("sender")
-            summary = sender or (
-                f"Parcel {barcode}" if barcode else "Österreichische Post parcel"
+            summary = (
+                parcel.get("contents")
+                or parcel.get("sender")
+                or (f"Parcel {barcode}" if barcode else "Österreichische Post parcel")
             )
             description_parts = [
                 f"Barcode: {barcode}" if barcode else None,
